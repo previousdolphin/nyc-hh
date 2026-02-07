@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Bridge: NYC & Hamburg</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .time-font { font-variant-numeric: tabular-nums; }
+        /* Smooth transitions for the calculator */
+        .calc-box { transition: all 0.3s ease; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-700 min-h-screen flex flex-col items-center">
+
+    <!-- Top Notice -->
+    <div class="w-full bg-slate-800 text-slate-400 text-[11px] py-1.5 px-4 text-center border-b border-slate-700">
+        <i class="fa-solid fa-hard-drive mr-2"></i> Data stored locally on your device.
+    </div>
+
+    <div class="w-full max-w-2xl px-4 py-8 pb-20 flex flex-col gap-6">
+
+        <!-- Live Header -->
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row justify-between items-center relative overflow-hidden">
+            <!-- Decorative Bar -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+
+            <!-- NYC Live -->
+            <div class="text-center w-full md:w-auto mb-4 md:mb-0">
+                <div class="text-xs font-bold text-sky-500 uppercase tracking-wider mb-1">New York</div>
+                <div id="live-nyc-time" class="text-3xl font-bold text-slate-800 time-font leading-none">--:--</div>
+                <div id="live-nyc-date" class="text-xs text-slate-400 mt-1">--</div>
+            </div>
+
+            <!-- Center Badge -->
+            <div class="bg-slate-100 rounded-full px-4 py-1 text-[10px] font-bold text-slate-500 shadow-inner">
+                <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i>
+                <span id="live-diff">--</span>
+            </div>
+
+            <!-- Hamburg Live -->
+            <div class="text-center w-full md:w-auto mt-4 md:mt-0">
+                <div class="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-1">Hamburg</div>
+                <div id="live-hh-time" class="text-3xl font-bold text-slate-800 time-font leading-none">--:--</div>
+                <div id="live-hh-date" class="text-xs text-slate-400 mt-1">--</div>
+            </div>
+        </header>
+
+        <!-- Time Calculator & Scheduler -->
+        <section class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+            <div class="bg-slate-800 text-white px-5 py-3 flex justify-between items-center">
+                <h2 class="text-sm font-semibold tracking-wide flex items-center">
+                    <i class="fa-solid fa-calculator mr-2 text-sky-400"></i> Converter & Planner
+                </h2>
+            </div>
+            
+            <div class="p-5">
+                <!-- Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Date & Time</label>
+                        <input type="datetime-local" id="calc-input" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-lg rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none p-2.5 time-font">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Timezone of Input</label>
+                        <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-lg">
+                            <button id="btn-mode-nyc" onclick="setMode('nyc')" class="rounded-md py-2.5 text-sm font-medium transition-all shadow-sm bg-white text-sky-600">
+                                NYC
+                            </button>
+                            <button id="btn-mode-hh" onclick="setMode('hh')" class="rounded-md py-2.5 text-sm font-medium transition-all text-slate-500 hover:text-indigo-600">
+                                Hamburg
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Comparison Result -->
+                <div class="relative bg-slate-50 rounded-xl border border-slate-200 p-4 mb-6">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1.5 shadow-sm border border-slate-200 z-10 text-slate-300">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 relative z-0">
+                        <!-- Left Side (NYC) -->
+                        <div id="box-nyc" class="text-center transition-opacity duration-300">
+                            <div class="text-[10px] font-bold text-sky-500 uppercase mb-1"><i class="fa-solid fa-city mr-1"></i>New York</div>
+                            <div id="res-nyc-time" class="text-2xl md:text-3xl font-bold text-slate-800 time-font">--:--</div>
+                            <div id="res-nyc-date" class="text-xs text-slate-500 font-medium">--</div>
+                        </div>
+
+                        <!-- Right Side (Hamburg) -->
+                        <div id="box-hh" class="text-center transition-opacity duration-300">
+                            <div class="text-[10px] font-bold text-indigo-500 uppercase mb-1"><i class="fa-solid fa-building-columns mr-1"></i>Hamburg</div>
+                            <div id="res-hh-time" class="text-2xl md:text-3xl font-bold text-slate-800 time-font">--:--</div>
+                            <div id="res-hh-date" class="text-xs text-slate-500 font-medium">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Action -->
+                <div class="flex gap-3 items-center border-t border-slate-100 pt-5">
+                    <div class="flex-1">
+                        <input type="text" id="event-title" placeholder="Event Name (Optional)" class="w-full text-sm bg-transparent border-b border-slate-200 focus:border-slate-800 outline-none py-2 transition-colors">
+                    </div>
+                    <button onclick="addEvent()" class="bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors shadow-lg shadow-slate-200">
+                        <i class="fa-solid fa-plus mr-1"></i> Schedule
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Schedule List -->
+        <section class="">
+            <div class="flex justify-between items-end mb-3 px-2">
+                <h3 class="font-bold text-slate-700 text-lg">Your Schedule</h3>
+                <button onclick="clearAll()" class="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Clear All</button>
+            </div>
+            
+            <div id="schedule-list" class="space-y-3">
+                <!-- Items injected here -->
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- Config ---
+        const NYC_ZONE = 'America/New_York';
+        const HH_ZONE = 'Europe/Berlin';
+        const STORE_KEY = 'tb_schedule_v3';
+
+        // --- State ---
+        let mode = 'nyc'; // 'nyc' or 'hh' (which city the input represents)
+        let events = [];
+
+        // --- Init ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Setup Live Clocks
+            setInterval(updateLiveClocks, 1000);
+            updateLiveClocks();
+
+            // Setup Input Default (Current Time rounded to minute)
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('calc-input').value = now.toISOString().slice(0, 16);
+
+            // Load Data
+            loadEvents();
+
+            // Listeners
+            document.getElementById('calc-input').addEventListener('input', calculate);
+            
+            // Initial calculation
+            calculate();
+        });
+
+        // --- Live Clocks ---
+        function updateLiveClocks() {
+            const now = new Date();
+            
+            const fmtTime = (z) => now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: z });
+            const fmtDate = (z) => now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: z });
+
+            document.getElementById('live-nyc-time').innerText = fmtTime(NYC_ZONE);
+            document.getElementById('live-nyc-date').innerText = fmtDate(NYC_ZONE);
+            document.getElementById('live-hh-time').innerText = fmtTime(HH_ZONE);
+            document.getElementById('live-hh-date').innerText = fmtDate(HH_ZONE);
+
+            // Diff
+            const nycDate = new Date(now.toLocaleString('en-US', { timeZone: NYC_ZONE }));
+            const hhDate = new Date(now.toLocaleString('en-US', { timeZone: HH_ZONE }));
+            const diffMs = hhDate - nycDate;
+            const diffHrs = Math.round(diffMs / 3600000);
+            document.getElementById('live-diff').innerText = (diffHrs >= 0 ? '+' : '') + diffHrs + 'h';
+        }
+
+        // --- Calculator Logic ---
+        function setMode(newMode) {
+            mode = newMode;
+            
+            // Update UI Buttons
+            const btnNyc = document.getElementById('btn-mode-nyc');
+            const btnHh = document.getElementById('btn-mode-hh');
+            
+            if (mode === 'nyc') {
+                btnNyc.className = "rounded-md py-2.5 text-sm font-medium transition-all shadow-sm bg-white text-sky-600 border border-slate-200";
+                btnHh.className = "rounded-md py-2.5 text-sm font-medium transition-all text-slate-500 hover:text-indigo-600";
+            } else {
+                btnHh.className = "rounded-md py-2.5 text-sm font-medium transition-all shadow-sm bg-white text-indigo-600 border border-slate-200";
+                btnNyc.className = "rounded-md py-2.5 text-sm font-medium transition-all text-slate-500 hover:text-sky-600";
+            }
+            
+            calculate();
+        }
+
+        function calculate() {
+            const inputVal = document.getElementById('calc-input').value;
+            if (!inputVal) return;
+
+            // Determine Offset
+            // Note: We use current date to determine offset for simplicity in this no-library environment.
+            // This is accurate unless the scheduled date crosses a DST boundary that is different from today's status.
+            const now = new Date();
+            const nycNow = new Date(now.toLocaleString('en-US', { timeZone: NYC_ZONE }));
+            const hhNow = new Date(now.toLocaleString('en-US', { timeZone: HH_ZONE }));
+            const diffMs = hhNow - nycNow; // Hamburg is usually ahead, so positive result
+
+            // Parse Input
+            const inputDate = new Date(inputVal); // Treated as local browser numbers
+            
+            let nycDate, hhDate;
+
+            // Apply Logic
+            if (mode === 'nyc') {
+                // Input is NYC. Target is HH.
+                nycDate = inputDate;
+                hhDate = new Date(inputDate.getTime() + diffMs);
+                
+                // Opacity feedback to show which is source
+                document.getElementById('box-nyc').style.opacity = '1';
+                document.getElementById('box-hh').style.opacity = '0.7';
+            } else {
+                // Input is HH. Target is NYC.
+                hhDate = inputDate;
+                nycDate = new Date(inputDate.getTime() - diffMs);
+
+                document.getElementById('box-nyc').style.opacity = '0.7';
+                document.getElementById('box-hh').style.opacity = '1';
+            }
+
+            // Render Results
+            const timeOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
+            const dateOpts = { month: 'short', day: 'numeric', weekday: 'short' };
+
+            document.getElementById('res-nyc-time').innerText = nycDate.toLocaleTimeString([], timeOpts);
+            document.getElementById('res-nyc-date').innerText = nycDate.toLocaleDateString([], dateOpts);
+
+            document.getElementById('res-hh-time').innerText = hhDate.toLocaleTimeString([], timeOpts);
+            document.getElementById('res-hh-date').innerText = hhDate.toLocaleDateString([], dateOpts);
+        }
+
+        // --- Scheduler Logic ---
+        function addEvent() {
+            const inputVal = document.getElementById('calc-input').value;
+            let title = document.getElementById('event-title').value.trim();
+            if (!title) title = "Untitled Meeting";
+
+            if (!inputVal) return;
+
+            const newItem = {
+                id: Date.now(),
+                title: title,
+                baseTime: inputVal,
+                baseMode: mode
+            };
+
+            events.push(newItem);
+            saveEvents();
+            renderList();
+            
+            // Clear title only (keep time for reference)
+            document.getElementById('event-title').value = '';
+        }
+
+        function renderList() {
+            const list = document.getElementById('schedule-list');
+            list.innerHTML = '';
+
+            if (events.length === 0) {
+                list.innerHTML = `<div class="text-center py-10 text-slate-300 italic text-sm">No saved events yet.</div>`;
+                return;
+            }
+
+            // Sort by time
+            events.sort((a,b) => a.baseTime.localeCompare(b.baseTime));
+
+            // Offset calc
+            const now = new Date();
+            const nycNow = new Date(now.toLocaleString('en-US', { timeZone: NYC_ZONE }));
+            const hhNow = new Date(now.toLocaleString('en-US', { timeZone: HH_ZONE }));
+            const diffMs = hhNow - nycNow;
+
+            events.forEach(ev => {
+                // Reconstruct dates
+                const inputDate = new Date(ev.baseTime);
+                let nycDate, hhDate;
+
+                if (ev.baseMode === 'nyc') {
+                    nycDate = inputDate;
+                    hhDate = new Date(inputDate.getTime() + diffMs);
+                } else {
+                    hhDate = inputDate;
+                    nycDate = new Date(inputDate.getTime() - diffMs);
+                }
+
+                const timeStr = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute:'2-digit', hour12: true });
+                const dateStr = (d) => d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+                const el = document.createElement('div');
+                el.className = 'bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 group hover:border-blue-200 transition-colors';
+                
+                el.innerHTML = `
+                    <div class="flex-1 w-full md:w-auto flex items-center gap-4">
+                        <!-- NYC -->
+                        <div class="text-right w-24 shrink-0">
+                            <div class="text-lg font-bold text-slate-700 leading-none time-font">${timeStr(nycDate)}</div>
+                            <div class="text-[10px] uppercase font-bold text-sky-500 mt-1">NYC • ${dateStr(nycDate)}</div>
+                        </div>
+
+                        <!-- Connector -->
+                        <div class="text-slate-300 text-xs"><i class="fa-solid fa-arrow-right"></i></div>
+
+                        <!-- Hamburg -->
+                        <div class="text-left w-24 shrink-0">
+                            <div class="text-lg font-bold text-slate-700 leading-none time-font">${timeStr(hhDate)}</div>
+                            <div class="text-[10px] uppercase font-bold text-indigo-500 mt-1">HAM • ${dateStr(hhDate)}</div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="pl-4 border-l border-slate-100 ml-2 hidden md:block">
+                            <div class="font-medium text-slate-800 text-sm">${ev.title}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Title (shown below time on small screens) -->
+                    <div class="md:hidden w-full text-center border-t border-slate-50 pt-2 font-medium text-slate-800 text-sm">
+                        ${ev.title}
+                    </div>
+
+                    <button onclick="removeEvent(${ev.id})" class="text-slate-300 hover:text-red-400 p-2 transition-colors" title="Delete">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        // --- Persistence ---
+        function saveEvents() {
+            localStorage.setItem(STORE_KEY, JSON.stringify(events));
+        }
+        function loadEvents() {
+            const data = localStorage.getItem(STORE_KEY);
+            if (data) {
+                events = JSON.parse(data);
+                renderList();
+            } else {
+                renderList();
+            }
+        }
+        function removeEvent(id) {
+            events = events.filter(e => e.id !== id);
+            saveEvents();
+            renderList();
+        }
+        function clearAll() {
+            if(confirm("Delete all events?")) {
+                events = [];
+                saveEvents();
+                renderList();
+            }
+        }
+    </script>
+</body>
+</html>
+
+
